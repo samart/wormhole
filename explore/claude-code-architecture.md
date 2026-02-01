@@ -1118,6 +1118,231 @@ This recursive agent spawning is the core of the "Agent SDK" pattern — agents 
 
 ---
 
+## 24. CLI Flags & Options Reference
+
+Complete reference of all `claude` CLI flags. Flags that enable **adding context**, **workflows/automation**, or **extensions/extensibility** are marked with badges.
+
+### 24.1 Core Execution Modes
+
+| Flag | Description |
+|---|---|
+| `(no flag)` | Start an interactive REPL session |
+| `"query"` | Start REPL with an initial prompt (e.g., `claude "fix the bug"`) |
+| `-p`, `--print` | **Print mode** — non-interactive/headless, runs query and exits. Required for CI/automation |
+| `-c`, `--continue` | Continue the most recent conversation in the current directory |
+| `-r`, `--resume <id\|name>` | Resume a specific session by ID or name (interactive picker if no arg) |
+| `-v`, `--version` | Print version and exit |
+| `update` | Update Claude Code to the latest version |
+
+### 24.2 Context & Input Flags
+
+> Flags that control what information Claude has access to during a session.
+
+| Flag | Description | Badge |
+|---|---|---|
+| `--add-dir <directories...>` | Add additional working directories Claude can access beyond the current directory. Enables multi-repo or monorepo workflows | **CONTEXT** |
+| `--file <specs...>` | File resources to download at startup. Format: `file_id:relative_path` (e.g., `--file file_abc:doc.txt file_def:img.png`) | **CONTEXT** |
+| `--system-prompt <prompt>` | **Replace** the entire default system prompt with custom text. Removes all built-in instructions | **CONTEXT** |
+| `--append-system-prompt <prompt>` | **Append** text to the default system prompt, preserving built-in behavior. **Recommended** for most use cases | **CONTEXT** |
+| `--input-format <format>` | Input format: `text` (default), `stream-json` (print mode only) | |
+| `--include-partial-messages` | Include partial streaming events in output (requires `-p` + `--output-format=stream-json`) | |
+
+> **Tip:** The `CLAUDE.md` file in a project root and `~/.claude/CLAUDE.md` also inject context automatically. The `--append-system-prompt` flag is the CLI equivalent for one-off instructions.
+
+### 24.3 Model Selection
+
+| Flag | Description |
+|---|---|
+| `--model <name>` | Set the model. Accepts shorthands (`sonnet`, `opus`, `haiku`, `sonnet[1m]`, `opusplan`) or full model IDs |
+| `--fallback-model <name>` | Automatic fallback model when primary is overloaded (print mode only) |
+
+### 24.4 Output & Formatting
+
+| Flag | Description |
+|---|---|
+| `--output-format <format>` | Output format (print mode only): `text` (default), `json` (single result), `stream-json` (realtime streaming) |
+| `--json-schema <schema>` | JSON Schema for structured output validation (e.g., `'{"type":"object","properties":{"name":{"type":"string"}}}'`) |
+| `--verbose` | Override verbose mode setting from config |
+| `--replay-user-messages` | Re-emit user messages from stdin back on stdout for acknowledgment (requires `--input-format=stream-json` and `--output-format=stream-json`) |
+
+### 24.5 Permission & Security
+
+| Flag | Description |
+|---|---|
+| `--permission-mode <mode>` | Start in a specific mode: `default`, `plan`, `acceptEdits`, `bypassPermissions`, `delegate`, `dontAsk` |
+| `--allowedTools`, `--allowed-tools <tools...>` | Comma or space-separated tools that execute without prompting (e.g., `"Bash(git:*)" "Read"`) |
+| `--disallowedTools`, `--disallowed-tools <tools...>` | Comma or space-separated tools removed entirely — Claude cannot use them |
+| `--tools <tools...>` | Restrict which built-in tools are available. Use `""` to disable all, `"default"` for all, or specific names (e.g., `"Bash,Edit,Read"`) |
+| `--dangerously-skip-permissions` | Bypass **all** permission checks. Recommended only for sandboxes with no internet access |
+| `--allow-dangerously-skip-permissions` | Enable permission bypassing as an available option without activating it by default |
+
+### 24.6 Extensions, Agents & Plugins
+
+> Flags that extend Claude Code's capabilities with custom agents, plugins, and MCP servers.
+
+| Flag | Description | Badge |
+|---|---|---|
+| `--agent <name>` | Route the session to a specific subagent type | **EXTENSION** |
+| `--agents <json>` | Define custom subagents inline via JSON (e.g., `'{"reviewer":{"description":"...","prompt":"..."}}'`) | **EXTENSION** |
+| `--plugin-dir <path...>` | Load plugins from directories for this session only | **EXTENSION** |
+| `--mcp-config <path\|json>` | Load MCP server configurations from a JSON file or inline JSON string | **EXTENSION** |
+| `--strict-mcp-config` | **Only** use MCP servers from `--mcp-config`, ignoring settings files | **EXTENSION** |
+| `--disable-slash-commands` | Disable all skills and slash commands | |
+| `--chrome` / `--no-chrome` | Enable/disable Chrome browser integration for web automation | **EXTENSION** |
+| `--ide` | Auto-connect to IDE integration on startup | **EXTENSION** |
+
+### 24.7 Session Management
+
+| Flag | Description |
+|---|---|
+| `--continue`, `-c` | Continue most recent conversation in current directory |
+| `--resume`, `-r` | Resume specific session by ID or name |
+| `--session-id <uuid>` | Use a specific UUID as the session ID |
+| `--fork-session` | When resuming, create a new session ID instead of reusing the original |
+| `--no-session-persistence` | Disable session persistence — sessions will not be saved to disk and cannot be resumed (print mode only) |
+| `--from-pr [value]` | Resume a session linked to a PR by PR number/URL, or open interactive picker with optional search term |
+
+### 24.8 Workflow & Cost Control
+
+> Flags for automation pipelines and resource management.
+
+| Flag | Description | Badge |
+|---|---|---|
+| `--max-budget-usd <amount>` | Maximum dollar amount to spend on API calls before stopping (print mode only) | **WORKFLOW** |
+
+### 24.9 Configuration & Debugging
+
+| Flag | Description |
+|---|---|
+| `--settings <file-or-json>` | Path to a settings JSON file or a JSON string to load additional settings from |
+| `--setting-sources <sources>` | Comma-separated list of setting sources to load: `user`, `project`, `local` |
+| `-d`, `--debug [filter]` | Enable debug mode with optional category filtering (e.g., `"api,hooks"` or `"!statsig,!file"`) |
+| `--debug-file <path>` | Write debug logs to a specific file path (implicitly enables debug mode) |
+| `--verbose` | Override verbose mode setting from config |
+| `--betas <betas...>` | Beta headers to include in API requests (API key users only) |
+| `--mcp-debug` | _(Deprecated — use `--debug` instead)_ Enable MCP debug mode |
+
+### 24.10 Subcommands
+
+#### `claude mcp` — MCP Server Management
+
+```
+claude mcp add --transport http <name> <url>        # Add remote HTTP server
+claude mcp add --transport sse <name> <url>          # Add remote SSE server
+claude mcp add [opts] <name> -- <cmd> [args...]      # Add local stdio server
+claude mcp add-json <name> '<json>'                  # Add from raw JSON config
+claude mcp add-from-claude-desktop                   # Import from Claude Desktop
+claude mcp list                                      # List configured servers
+claude mcp get <name>                                # Show server details
+claude mcp remove <name>                             # Remove a server
+claude mcp serve                                     # Expose Claude Code as MCP server
+claude mcp reset-project-choices                     # Reset MCP approval state
+```
+
+**`claude mcp add` flags:**
+
+| Flag | Description |
+|---|---|
+| `-t`, `--transport <transport>` | Transport type: `stdio` (default), `sse`, `http` |
+| `-H`, `--header <header...>` | Set WebSocket/HTTP headers, repeatable (e.g., `-H "Authorization: Bearer token"`) |
+| `-e`, `--env <env...>` | Set environment variables for server process, repeatable (e.g., `-e KEY=value`) |
+| `-s`, `--scope <scope>` | Configuration scope: `local` (default), `project`, `user` |
+
+**`claude mcp serve` flags:**
+
+| Flag | Description |
+|---|---|
+| `-d`, `--debug` | Enable debug mode |
+| `--verbose` | Override verbose mode setting from config |
+
+#### `claude plugin` — Plugin Management
+
+```
+claude plugin install <plugin>             # Install a plugin (use plugin@marketplace for specific source)
+claude plugin uninstall <plugin>           # Uninstall a plugin (alias: remove)
+claude plugin list                         # List installed plugins
+claude plugin enable <plugin>              # Enable a disabled plugin
+claude plugin disable [plugin]             # Disable an enabled plugin
+claude plugin update <plugin>              # Update a plugin to latest version
+claude plugin validate <path>              # Validate a plugin or marketplace manifest
+claude plugin marketplace add <source>     # Add a marketplace from URL, path, or GitHub repo
+claude plugin marketplace list             # List configured marketplaces
+claude plugin marketplace remove <name>    # Remove a marketplace
+claude plugin marketplace update [name]    # Update marketplace(s) from source
+```
+
+#### `claude doctor`
+
+Check the health of the Claude Code auto-updater.
+
+#### `claude install [target]`
+
+Install Claude Code native build. Use `[target]` to specify version (`stable`, `latest`, or a specific version).
+
+| Flag | Description |
+|---|---|
+| `--force` | Force installation even if already installed |
+
+#### `claude setup-token`
+
+Set up a long-lived authentication token (requires Claude subscription).
+
+#### `claude update`
+
+Check for updates and install if available.
+
+### 24.11 Summary: Flags by Purpose
+
+The following table highlights all flags specifically relevant to **adding context**, **extending functionality**, or **building workflows**:
+
+| Purpose | Flags |
+|---|---|
+| **Adding context** | `--add-dir`, `--file`, `--system-prompt`, `--append-system-prompt` |
+| **Custom agents** | `--agent`, `--agents` |
+| **Plugins** | `--plugin-dir`, `claude plugin install` |
+| **MCP servers** | `--mcp-config`, `--strict-mcp-config`, `claude mcp add` |
+| **IDE/Browser integration** | `--ide`, `--chrome` |
+| **Workflow control** | `--max-budget-usd`, `--permission-mode`, `--allowedTools`, `--disallowedTools`, `--tools` |
+| **CI/Pipeline** | `-p` (print mode), `--output-format`, `--json-schema`, `--no-session-persistence`, `--replay-user-messages` |
+| **Session continuity** | `-c`, `-r`, `--session-id`, `--fork-session`, `--from-pr` |
+
+### 24.12 Common Patterns
+
+**Multi-directory development:**
+```bash
+claude --add-dir ../shared-lib --add-dir ../common-types
+```
+
+**CI pipeline with structured output:**
+```bash
+claude -p "Analyze this PR for issues" \
+  --output-format json \
+  --max-budget-usd 2.00 \
+  --allowedTools "Read" "Grep" "Glob"
+```
+
+**Custom agent with MCP tools:**
+```bash
+claude --mcp-config ./mcp-servers.json \
+  --agents '{"db-reviewer":{"description":"Database migration reviewer","prompt":"Review SQL migrations for safety"}}' \
+  --agent db-reviewer
+```
+
+**Locked-down execution:**
+```bash
+claude -p "Review code" \
+  --permission-mode plan \
+  --tools "Read,Grep,Glob" \
+  --disallowedTools "Bash(rm *)" "Bash(curl *)"
+```
+
+**Appending project-specific instructions:**
+```bash
+claude --append-system-prompt "Always prefer functional patterns. Use Rust idioms. Never use unwrap() in production code."
+```
+
+---
+
 ## Appendix A: Data Flow Diagram
 
 ```
